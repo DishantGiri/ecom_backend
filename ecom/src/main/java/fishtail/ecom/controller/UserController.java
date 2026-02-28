@@ -50,8 +50,11 @@ public class UserController {
             return ResponseEntity.badRequest().body("Email is required");
         }
 
-        String ipAddress = getClientIp(servletRequest);
-
+        // Allow the frontend to explicitly send the IP (like the tracking endpoint)
+        String ipAddress = request.get("ipAddress");
+        if (ipAddress == null || ipAddress.isBlank()) {
+            ipAddress = getClientIp(servletRequest);
+        }
         try {
             UserDTO userDto = userService.registerUser(email, ipAddress);
             return ResponseEntity.ok(userDto);
