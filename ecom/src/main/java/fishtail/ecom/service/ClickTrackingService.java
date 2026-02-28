@@ -41,7 +41,7 @@ public class ClickTrackingService {
         clickStatRepository.save(stat);
     }
 
-    private String resolveCountryFromIp(String ip) {
+    public String resolveCountryFromIp(String ip) {
         if (ip == null || ip.isBlank() || ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1")) {
             return "Unknown";
         }

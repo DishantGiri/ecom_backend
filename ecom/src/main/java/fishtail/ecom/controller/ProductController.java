@@ -46,12 +46,12 @@ public class ProductController {
 
     @GetMapping("/api/admin/products")
     public ResponseEntity<List<ProductResponseDTO>> getAllProductsAdmin() {
-        return ResponseEntity.ok(productService.getAllProducts());
+        return ResponseEntity.ok(productService.getAllProducts("USD"));
     }
 
     @GetMapping("/api/admin/products/{id}")
     public ResponseEntity<ProductResponseDTO> getProductByIdAdmin(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+        return ResponseEntity.ok(productService.getProductById(id, "USD"));
     }
 
     @PutMapping(value = "/api/admin/products/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -91,8 +91,9 @@ public class ProductController {
     }
 
     @GetMapping("/api/products")
-    public ResponseEntity<List<ProductResponseDTO>> getAllProducts() {
-        return ResponseEntity.ok(productService.getAllProducts());
+    public ResponseEntity<List<ProductResponseDTO>> getAllProducts(
+            @RequestParam(defaultValue = "USD", required = false) String currency) {
+        return ResponseEntity.ok(productService.getAllProducts(currency));
     }
 
     /**
@@ -100,32 +101,39 @@ public class ProductController {
      * Returns products sorted by highest total clicks globally.
      */
     @GetMapping("/api/products/popular")
-    public ResponseEntity<List<ProductResponseDTO>> getPopularProducts() {
-        return ResponseEntity.ok(productService.getPopularProducts());
+    public ResponseEntity<List<ProductResponseDTO>> getPopularProducts(
+            @RequestParam(defaultValue = "USD", required = false) String currency) {
+        return ResponseEntity.ok(productService.getPopularProducts(currency));
     }
 
     /**
      * GET /api/products/{id}
      */
     @GetMapping("/api/products/{id}")
-    public ResponseEntity<ProductResponseDTO> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+    public ResponseEntity<ProductResponseDTO> getProductById(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "USD", required = false) String currency) {
+        return ResponseEntity.ok(productService.getProductById(id, currency));
     }
 
     /**
      * GET /api/products/search?keyword=xyz
      */
     @GetMapping("/api/products/search")
-    public ResponseEntity<List<ProductResponseDTO>> searchProducts(@RequestParam String keyword) {
-        return ResponseEntity.ok(productService.searchByTitle(keyword));
+    public ResponseEntity<List<ProductResponseDTO>> searchByTitle(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "USD", required = false) String currency) {
+        return ResponseEntity.ok(productService.searchByTitle(keyword, currency));
     }
 
     /**
      * GET /api/products/category?name=supplements
      */
     @GetMapping("/api/products/category")
-    public ResponseEntity<List<ProductResponseDTO>> getByCategory(@RequestParam String name) {
-        return ResponseEntity.ok(productService.getByCategory(name));
+    public ResponseEntity<List<ProductResponseDTO>> getByCategory(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "USD", required = false) String currency) {
+        return ResponseEntity.ok(productService.getByCategory(name, currency));
     }
 
     private Map<Integer, MultipartFile> buildOfferImageMap(MultipartFile... files) {

@@ -18,4 +18,10 @@ public class TrackingController {
         clickTrackingService.trackClick(request);
         return ResponseEntity.ok("Click tracked successfully");
     }
+
+    @GetMapping("/country")
+    public ResponseEntity<java.util.Map<String, String>> getCountryByIp(@RequestParam String ipAddress) {
+        String country = clickTrackingService.resolveCountryFromIp(ipAddress);
+        return ResponseEntity.ok(java.util.Map.of("country", country));
+    }
 }

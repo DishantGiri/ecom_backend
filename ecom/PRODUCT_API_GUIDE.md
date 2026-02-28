@@ -71,6 +71,9 @@ Admin endpoints require a **JWT Token** in the header:
 | `GET` | `/api/products/category?name=...` | Filter products by category. |
 | `GET` | `/api/images/{filename}` | Serve an image file. |
 | `POST` | `/api/track/click` | Track a product click. Send `{"productId": 1, "ipAddress": "..."}`. |
+| `GET` | `/api/track/country?ipAddress=...` | Resolve an IP address to a country name. |
+
+> 🌍 **Multi-Currency Support:** All product GET endpoints accept an optional `?currency=EUR` (or GBP, AUD, CAD etc) query parameter. If provided, the API will convert all product and offer prices into the requested currency using a cached live exchange rate from Frankfurter API. It defaults to USD.
 
 ---
 

@@ -43,6 +43,9 @@ public class ProductResponseDTO {
     /** Analytics: Clicks per Country */
     private List<ProductClickStatDTO> clickStats;
 
+    /** E.g., USD, EUR, GBP (defaults to USD) */
+    private String currency;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

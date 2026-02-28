@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CurrencyService currencyService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -90,24 +91,26 @@ public class ProductService {
         }
 
         product = productRepository.save(product);
-        return toResponseDTO(product, true);
+        // We pass "USD" natively when returning from Admin update actions,
+        // as admins are managing USD prices.
+        return toResponseDTO(product, true, "USD");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // READ ALL
+    // READ ALL & POPULAR
     // ──────────────────────────────────────────────────────────────────────────
 
-    public List<ProductResponseDTO> getAllProducts() {
+    public List<ProductResponseDTO> getAllProducts(String currency) {
         return productRepository.findAll()
                 .stream()
-                .map(p -> toResponseDTO(p, false))
+                .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
     }
 
-    public List<ProductResponseDTO> getPopularProducts() {
+    public List<ProductResponseDTO> getPopularProducts(String currency) {
         return productRepository.findAllOrderByTotalClicksDesc()
                 .stream()
-                .map(p -> toResponseDTO(p, false))
+                .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
     }
 
@@ -119,10 +122,9 @@ public class ProductService {
     // READ ONE
     // ──────────────────────────────────────────────────────────────────────────
 
-    public ProductResponseDTO getProductById(Long id) {
+    public ProductResponseDTO getProductById(Long id, String currency) {
         Product product = findOrThrow(id);
 
-        // Find similar products: same category and price +/- 50%
         java.math.BigDecimal minPrice = product.getDiscountedPrice() != null
                 ? product.getDiscountedPrice().multiply(java.math.BigDecimal.valueOf(0.5))
                 : java.math.BigDecimal.ZERO;
@@ -137,12 +139,12 @@ public class ProductService {
                 maxPrice);
 
         // Map main product WITH similar products list (includeSimilar=true)
-        ProductResponseDTO response = toResponseDTO(product, true);
+        ProductResponseDTO response = toResponseDTO(product, true, currency);
 
-        // Map similar products WITHOUT nesting more similar ones (includeSimilar=false)
+        // Map similar products WITHOUT nesting more similar ones
         List<ProductResponseDTO> similarDTOs = similarProducts.stream()
-                .limit(4) // Show top 4
-                .map(p -> toResponseDTO(p, false))
+                .limit(4)
+                .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
 
         response.setSimilarProducts(similarDTOs);
@@ -210,7 +212,9 @@ public class ProductService {
         }
 
         product = productRepository.save(product);
-        return toResponseDTO(product, true);
+        // We pass "USD" natively when returning from Admin update actions,
+        // as admins are managing USD prices.
+        return toResponseDTO(product, true, "USD");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -241,24 +245,26 @@ public class ProductService {
             deleteFileIfExists(filename);
         }
         product = productRepository.save(product);
-        return toResponseDTO(product, true);
+        // We pass "USD" natively when returning from Admin update actions,
+        // as admins are managing USD prices.
+        return toResponseDTO(product, true, "USD");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
     // SEARCH
     // ──────────────────────────────────────────────────────────────────────────
 
-    public List<ProductResponseDTO> searchByTitle(String keyword) {
+    public List<ProductResponseDTO> searchByTitle(String keyword, String currency) {
         return productRepository.findByTitleFuzzy(keyword)
                 .stream()
-                .map(p -> toResponseDTO(p, false))
+                .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
     }
 
-    public List<ProductResponseDTO> getByCategory(String category) {
+    public List<ProductResponseDTO> getByCategory(String category, String currency) {
         return productRepository.findByCategoryIgnoreCase(category)
                 .stream()
-                .map(p -> toResponseDTO(p, false))
+                .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
     }
 
@@ -317,27 +323,35 @@ public class ProductService {
                 .originalPrice(dto.getOriginalPrice())
                 .discountedPrice(dto.getDiscountedPrice())
                 .displayOrder(dto.getDisplayOrder())
-                .featureImage(offerImageFilename) // may be null if not uploaded
+                .featureImage(offerImageFilename)
                 .product(product)
                 .build();
     }
 
-    private ProductOfferDTO toOfferDTO(ProductOffer offer) {
+    private ProductOfferDTO toOfferDTO(ProductOffer offer, String currency) {
         String offerImageUrl = (offer.getFeatureImage() != null && !offer.getFeatureImage().isBlank())
                 ? baseUrl + "/api/images/" + offer.getFeatureImage()
                 : null;
+
+        java.math.BigDecimal originalConverted = currencyService.convertFromUsd(offer.getOriginalPrice(), currency);
+        java.math.BigDecimal discountedConverted = currencyService.convertFromUsd(offer.getDiscountedPrice(), currency);
+
         return ProductOfferDTO.builder()
                 .id(offer.getId())
                 .label(offer.getLabel())
                 .quantity(offer.getQuantity())
-                .originalPrice(offer.getOriginalPrice())
-                .discountedPrice(offer.getDiscountedPrice())
+                .originalPrice(originalConverted)
+                .discountedPrice(discountedConverted)
                 .displayOrder(offer.getDisplayOrder())
                 .featureImageUrl(offerImageUrl)
                 .build();
     }
 
-    private ProductResponseDTO toResponseDTO(Product product, boolean includeSimilar) {
+    private ProductResponseDTO toResponseDTO(Product product, boolean includeSimilar, String requestCurrency) {
+        // Resolve target currency string, default to USD
+        String currency = (requestCurrency == null || requestCurrency.isBlank()) ? "USD"
+                : requestCurrency.toUpperCase();
+
         // Sort offers by displayOrder
         List<ProductOffer> sortedOffers = product.getOffers() == null ? Collections.emptyList()
                 : product.getOffers().stream()
@@ -345,10 +359,9 @@ public class ProductService {
                         .collect(Collectors.toList());
 
         List<ProductOfferDTO> offerDTOs = sortedOffers.stream()
-                .map(this::toOfferDTO)
+                .map(o -> toOfferDTO(o, currency))
                 .collect(Collectors.toList());
 
-        // Base product feature image URL
         String featureUrl = (product.getFeatureImage() != null && !product.getFeatureImage().isBlank())
                 ? baseUrl + "/api/images/" + product.getFeatureImage()
                 : null;
@@ -373,8 +386,9 @@ public class ProductService {
                 .title(product.getTitle())
                 .numberOfReviews(product.getNumberOfReviews())
                 .starRating(product.getStarRating())
-                .originalPrice(product.getOriginalPrice())
-                .discountedPrice(product.getDiscountedPrice())
+                .originalPrice(currencyService.convertFromUsd(product.getOriginalPrice(), currency))
+                .discountedPrice(currencyService.convertFromUsd(product.getDiscountedPrice(), currency))
+                .currency(currency)
                 .featureImageUrl(featureUrl)
                 .galleryImageUrls(galleryUrls)
                 .productLink(product.getProductLink())
