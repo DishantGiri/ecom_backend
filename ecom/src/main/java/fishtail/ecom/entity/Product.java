@@ -51,12 +51,37 @@ public class Product {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "highlights", columnDefinition = "TEXT")
+    private String highlights;
+
+    @Column(name = "directions", columnDefinition = "TEXT")
+    private String directions;
+
+    @Column(name = "benefits", columnDefinition = "TEXT")
+    private String benefits;
+
+    @Column(name = "guarantee", columnDefinition = "TEXT")
+    private String guarantee;
+
+    @Column(name = "shipping_info", columnDefinition = "TEXT")
+    private String shippingInfo;
+
     /** Gallery images */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "product_gallery_images", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "image_url")
     @Builder.Default
     private List<String> galleryImages = new ArrayList<>();
+
+    /** Promotional / Manufacturer Description Images */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "product_promotional_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url")
+    @Builder.Default
+    private List<String> promotionalImages = new ArrayList<>();
 
     /** Bundle / offer types (e.g. 1 bottle, 2 bottles, 3 bottles) */
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)

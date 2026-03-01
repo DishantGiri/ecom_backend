@@ -27,6 +27,7 @@ public class ProductController {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "featureImage", required = false) MultipartFile featureImage,
             @RequestPart(value = "galleryImages", required = false) List<MultipartFile> galleryImages,
+            @RequestPart(value = "promotionalImages", required = false) List<MultipartFile> promotionalImages,
             // Per-offer images: offerImage_0, offerImage_1, offerImage_2 …
             @RequestPart(value = "offerImage_0", required = false) MultipartFile offerImg0,
             @RequestPart(value = "offerImage_1", required = false) MultipartFile offerImg1,
@@ -41,7 +42,8 @@ public class ProductController {
         Map<Integer, MultipartFile> offerImages = buildOfferImageMap(
                 offerImg0, offerImg1, offerImg2, offerImg3, offerImg4,
                 offerImg5, offerImg6, offerImg7, offerImg8);
-        return ResponseEntity.ok(productService.createProduct(dto, featureImage, galleryImages, offerImages));
+        return ResponseEntity
+                .ok(productService.createProduct(dto, featureImage, galleryImages, promotionalImages, offerImages));
     }
 
     @GetMapping("/api/admin/products")
@@ -60,6 +62,7 @@ public class ProductController {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "featureImage", required = false) MultipartFile featureImage,
             @RequestPart(value = "galleryImages", required = false) List<MultipartFile> galleryImages,
+            @RequestPart(value = "promotionalImages", required = false) List<MultipartFile> promotionalImages,
             // Per-offer images: upload only those you want to replace
             @RequestPart(value = "offerImage_0", required = false) MultipartFile offerImg0,
             @RequestPart(value = "offerImage_1", required = false) MultipartFile offerImg1,
@@ -74,7 +77,8 @@ public class ProductController {
         Map<Integer, MultipartFile> offerImages = buildOfferImageMap(
                 offerImg0, offerImg1, offerImg2, offerImg3, offerImg4,
                 offerImg5, offerImg6, offerImg7, offerImg8);
-        return ResponseEntity.ok(productService.updateProduct(id, dto, featureImage, galleryImages, offerImages));
+        return ResponseEntity
+                .ok(productService.updateProduct(id, dto, featureImage, galleryImages, promotionalImages, offerImages));
     }
 
     @DeleteMapping("/api/admin/products/{id}")
@@ -88,6 +92,13 @@ public class ProductController {
             @PathVariable Long id,
             @PathVariable String filename) {
         return ResponseEntity.ok(productService.removeGalleryImage(id, filename));
+    }
+
+    @DeleteMapping("/api/admin/products/{id}/promotional/{filename}")
+    public ResponseEntity<ProductResponseDTO> removePromotionalImage(
+            @PathVariable Long id,
+            @PathVariable String filename) {
+        return ResponseEntity.ok(productService.removePromotionalImage(id, filename));
     }
 
     @GetMapping("/api/products")

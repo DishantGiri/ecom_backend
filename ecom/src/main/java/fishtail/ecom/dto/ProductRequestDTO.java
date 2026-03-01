@@ -33,4 +33,11 @@ public class ProductRequestDTO {
 
     /** List of offer/bundle types for this product */
     private List<ProductOfferDTO> offers;
+
+    private String description;
+    private String highlights;
+    private String directions;
+    private String benefits;
+    private String guarantee;
+    private String shippingInfo;
 }

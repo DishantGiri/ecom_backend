@@ -45,6 +45,7 @@ public class ProductService {
     public ProductResponseDTO createProduct(ProductRequestDTO dto,
             MultipartFile featureImage,
             List<MultipartFile> galleryImages,
+            List<MultipartFile> promotionalImages,
             Map<Integer, MultipartFile> offerImages) throws IOException {
 
         validateStarRating(dto.getStarRating());
@@ -57,7 +58,14 @@ public class ProductService {
                 .discountedPrice(dto.getDiscountedPrice())
                 .productLink(dto.getProductLink())
                 .category(dto.getCategory())
+                .description(dto.getDescription())
+                .highlights(dto.getHighlights())
+                .directions(dto.getDirections())
+                .benefits(dto.getBenefits())
+                .guarantee(dto.getGuarantee())
+                .shippingInfo(dto.getShippingInfo())
                 .galleryImages(new ArrayList<>())
+                .promotionalImages(new ArrayList<>())
                 .offers(new ArrayList<>())
                 .build();
 
@@ -71,6 +79,15 @@ public class ProductService {
             for (MultipartFile file : galleryImages) {
                 if (file != null && !file.isEmpty()) {
                     product.getGalleryImages().add(saveFile(file));
+                }
+            }
+        }
+
+        // Save promotional images
+        if (promotionalImages != null) {
+            for (MultipartFile file : promotionalImages) {
+                if (file != null && !file.isEmpty()) {
+                    product.getPromotionalImages().add(saveFile(file));
                 }
             }
         }
@@ -166,6 +183,7 @@ public class ProductService {
             ProductRequestDTO dto,
             MultipartFile featureImage,
             List<MultipartFile> galleryImages,
+            List<MultipartFile> promotionalImages,
             Map<Integer, MultipartFile> offerImages) throws IOException {
 
         validateStarRating(dto.getStarRating());
@@ -178,6 +196,12 @@ public class ProductService {
         product.setDiscountedPrice(dto.getDiscountedPrice());
         product.setProductLink(dto.getProductLink());
         product.setCategory(dto.getCategory());
+        product.setDescription(dto.getDescription());
+        product.setHighlights(dto.getHighlights());
+        product.setDirections(dto.getDirections());
+        product.setBenefits(dto.getBenefits());
+        product.setGuarantee(dto.getGuarantee());
+        product.setShippingInfo(dto.getShippingInfo());
 
         // Replace product-level feature image if a new one is provided
         if (featureImage != null && !featureImage.isEmpty()) {
@@ -190,6 +214,15 @@ public class ProductService {
             for (MultipartFile file : galleryImages) {
                 if (file != null && !file.isEmpty()) {
                     product.getGalleryImages().add(saveFile(file));
+                }
+            }
+        }
+
+        // Append new promotional images (keep existing ones)
+        if (promotionalImages != null) {
+            for (MultipartFile file : promotionalImages) {
+                if (file != null && !file.isEmpty()) {
+                    product.getPromotionalImages().add(saveFile(file));
                 }
             }
         }
@@ -228,6 +261,8 @@ public class ProductService {
         deleteFileIfExists(product.getFeatureImage());
         // Delete gallery images
         product.getGalleryImages().forEach(this::deleteFileIfExists);
+        // Delete promotional images
+        product.getPromotionalImages().forEach(this::deleteFileIfExists);
         // Delete per-offer feature images
         product.getOffers().forEach(o -> deleteFileIfExists(o.getFeatureImage()));
         productRepository.delete(product);
@@ -241,6 +276,23 @@ public class ProductService {
     public ProductResponseDTO removeGalleryImage(Long productId, String filename) {
         Product product = findOrThrow(productId);
         boolean removed = product.getGalleryImages().remove(filename);
+        if (removed) {
+            deleteFileIfExists(filename);
+        }
+        product = productRepository.save(product);
+        // We pass "USD" natively when returning from Admin update actions,
+        // as admins are managing USD prices.
+        return toResponseDTO(product, true, "USD");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // REMOVE SINGLE PROMOTIONAL IMAGE
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public ProductResponseDTO removePromotionalImage(Long productId, String filename) {
+        Product product = findOrThrow(productId);
+        boolean removed = product.getPromotionalImages().remove(filename);
         if (removed) {
             deleteFileIfExists(filename);
         }
@@ -373,6 +425,13 @@ public class ProductService {
                     .forEach(galleryUrls::add);
         }
 
+        List<String> promotionalUrls = new ArrayList<>();
+        if (product.getPromotionalImages() != null) {
+            product.getPromotionalImages().stream()
+                    .map(f -> baseUrl + "/api/images/" + f)
+                    .forEach(promotionalUrls::add);
+        }
+
         List<fishtail.ecom.dto.ProductClickStatDTO> stats = product.getClickStats() == null ? Collections.emptyList()
                 : product.getClickStats().stream()
                         .map(s -> fishtail.ecom.dto.ProductClickStatDTO.builder()
@@ -391,8 +450,15 @@ public class ProductService {
                 .currency(currency)
                 .featureImageUrl(featureUrl)
                 .galleryImageUrls(galleryUrls)
+                .promotionalImageUrls(promotionalUrls)
                 .productLink(product.getProductLink())
                 .category(product.getCategory())
+                .description(product.getDescription())
+                .highlights(product.getHighlights())
+                .directions(product.getDirections())
+                .benefits(product.getBenefits())
+                .guarantee(product.getGuarantee())
+                .shippingInfo(product.getShippingInfo())
                 .offers(offerDTOs)
                 .clickStats(stats)
                 .createdAt(product.getCreatedAt())

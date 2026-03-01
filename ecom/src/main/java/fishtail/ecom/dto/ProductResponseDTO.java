@@ -31,6 +31,9 @@ public class ProductResponseDTO {
     /** Full URLs for gallery images */
     private List<String> galleryImageUrls;
 
+    /** Full URLs for promotional / manufacturer images */
+    private List<String> promotionalImageUrls;
+
     private String productLink;
 
     private String category;
@@ -45,6 +48,13 @@ public class ProductResponseDTO {
 
     /** E.g., USD, EUR, GBP (defaults to USD) */
     private String currency;
+
+    private String description;
+    private String highlights;
+    private String directions;
+    private String benefits;
+    private String guarantee;
+    private String shippingInfo;
 
     private LocalDateTime createdAt;
 

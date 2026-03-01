@@ -25,6 +25,7 @@ Admin endpoints require a **JWT Token** in the header:
 | `data` | **JSON String** | The `ProductRequestDTO` containing product details and offers. |
 | `featureImage` | File | Main hero image for the product (Global). |
 | `galleryImages` | File(s) | Multiple images for the general product gallery. |
+| `promotionalImages` | File(s) | Multiple images representing the product's long description/manufacturer promotional graphics. |
 | `offerImage_0` | File | Hero image specific to the **1st offer** in the list. |
 | `offerImage_1` | File | Hero image specific to the **2nd offer** in the list. |
 | `offerImage_2` | File | Hero image specific to the **3rd offer** in the list. |
@@ -39,6 +40,12 @@ Admin endpoints require a **JWT Token** in the header:
   "discountedPrice": 24.95,
   "category": "Supplements",
   "productLink": "https://example.com/item",
+  "description": "Enjoy the natural support of our Nerve Freedom Pro...",
+  "highlights": "🧠 Supports healthy nerve function\n⚕️ Promotes improved blood circulation\n⚡ Helps maintain consistent energy levels",
+  "directions": "For optimal results, take one (1) capsule per day with food...",
+  "benefits": "- Supports healthy nerve function and promotes optimal blood circulation...",
+  "guarantee": "30-Day Money Back Guarantee\nAt Supplements Fast, we stand behind...",
+  "shippingInfo": "Standard Free Shipping USA = 3 - 4 Business Days Delivery...",
   "offers": [
     { "label": "Buy 1 Bottle", "quantity": 1, "originalPrice": 59.95, "discountedPrice": 24.95, "displayOrder": 1 },
     { "label": "Buy 2 Bottles Get 1 Free", "quantity": 3, "originalPrice": 179.85, "discountedPrice": 49.95, "displayOrder": 2 },
@@ -57,6 +64,13 @@ Admin endpoints require a **JWT Token** in the header:
 *   **Method:** `DELETE`
 *   **URL:** `/api/admin/products/{id}`
 *   **Result:** Deletes product, all offers, and removes all associated files from the server.
+
+### 4. Remove Single Image (Gallery or Promotional)
+*   **Method:** `DELETE`
+*   **URLs:** 
+    *   `/api/admin/products/{id}/gallery/{filename}`
+    *   `/api/admin/products/{id}/promotional/{filename}`
+*   **Result:** Deletes the specific image file from the database array and the server disk.
 
 ---
 

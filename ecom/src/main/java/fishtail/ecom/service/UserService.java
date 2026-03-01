@@ -23,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -44,6 +45,71 @@ public class UserService {
     public void changePassword(String email, String newPassword) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setRequirePasswordChange(false);
+        userRepository.save(user);
+    }
+
+    public void generatePasswordResetOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getRole() != Role.ROLE_ADMIN) {
+            throw new RuntimeException("Only admins can reset password via this endpoint");
+        }
+
+        String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+        user.setResetOtp(otp);
+        user.setResetOtpExpiry(java.time.LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        emailService.sendEmail(user.getEmail(), "Admin Password Reset OTP",
+                "Your OTP is: " + otp + ". It expires in 15 minutes.");
+    }
+
+    public void resetPasswordWithOtp(String email, String otp, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getResetOtp() == null || !user.getResetOtp().equals(otp)) {
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        if (user.getResetOtpExpiry() == null || user.getResetOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("OTP has expired");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetOtp(null);
+        user.setResetOtpExpiry(null);
+        user.setRequirePasswordChange(false);
+        userRepository.save(user);
+    }
+
+    public void changeEmail(String currentEmail, String newEmail, String password) {
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid password. Email change aborted.");
+        }
+
+        if (userRepository.findByEmail(newEmail).isPresent()) {
+            throw new RuntimeException("The new email is already taken.");
+        }
+
+        user.setEmail(newEmail);
+        userRepository.save(user);
+    }
+
+    public void changePasswordSecurely(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Invalid current password. Password change aborted.");
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setRequirePasswordChange(false);
         userRepository.save(user);

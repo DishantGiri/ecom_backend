@@ -27,4 +27,8 @@ public class User {
     private boolean requirePasswordChange;
 
     private String country;
+
+    private String resetOtp;
+
+    private java.time.LocalDateTime resetOtpExpiry;
 }

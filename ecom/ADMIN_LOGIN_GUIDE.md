@@ -116,4 +116,88 @@ const handleChangePassword = async (newPassword) => {
 - `/api/login`: Public
 - `/api/register`: Public
 - `/api/change-password`: **Authenticated (Requires JWT)**
+- `/api/admin/forgot-password`: **Public**
+- `/api/admin/reset-password`: **Public**
 - `/api/admin/**`: **Admin Only (Requires ROLE_ADMIN)**
+
+---
+
+## 6. Forgot Password Flow
+If an admin loses their password, they can reset it via a 6-digit OTP sent to their email. 
+
+### Step A: Request OTP
+*   **Method:** `POST`
+*   **URL:** `/api/admin/forgot-password`
+*   **Access:** Public
+*   **Body:**
+```json
+{
+  "email": "admin@ecom.com"
+}
+```
+*   **Behavior:** Checks if an Admin user exists with that email. If so, a randomized 6-digit PIN is injected into their database row and sent to the SMTP email address. The OTP expires automatically in **15 minutes**.
+
+### Step B: Validate & Reset Password
+*   **Method:** `POST`
+*   **URL:** `/api/admin/reset-password`
+*   **Access:** Public
+*   **Body:**
+```json
+{
+  "email": "admin@ecom.com",
+  "otp": "654321",
+  "newPassword": "MyNewSecurePassword123!"
+}
+```
+*   **Behavior:** 
+    1. Checks if the `otp` explicitly matches the one stored in the DB.
+    2. Validates it hasn't been over 15 minutes since it was generated.
+    3. Hashes the `newPassword` and securely overwrites the old forgotten one.
+    4. Wipes the OTP columns to prevent replay attacks.
+    5. Clears the `requirePasswordChange` flag if it was stranded.
+    6. Upon success, the user can now login normally through `/api/login`!
+
+---
+
+## 7. Change Admin Email
+If the business undergoes a handover or rebranding, the admin can securely change their email address. To prevent unauthorized takeovers, they must confirm their current password during the swap.
+
+*   **Method:** `POST`
+*   **URL:** `/api/admin/change-email`
+*   **Headers:** `Authorization: Bearer <token>`
+*   **Body:**
+```json
+{
+  "newEmail": "new-admin@yourdomain.com",
+  "password": "TheirCurrentPassword123"
+}
+```
+*   **Behavior:** 
+    1. Grabs the currently authenticated user's email from the JWT token.
+    2. Validates that the provided `password` matches the one in the database.
+    3. Checks to ensure `newEmail` is not already taken by another account.
+    4. Replaces the email and saves.
+    5. **IMPORTANT:** Upon success, the frontend should immediately force the user to re-login, as their previous JWT Token is bound to an email that no longer exists!
+
+---
+
+## 8. Secure Admin Password Change
+Aside from the mandatory first-time password reset, an admin can change their password at any time from their settings panel. This requires validating their current password for security.
+
+*   **Method:** `POST`
+*   **URL:** `/api/admin/change-password`
+*   **Headers:** `Authorization: Bearer <token>`
+*   **Body:**
+```json
+{
+  "currentPassword": "OldPassword123",
+  "newPassword": "BrandNewSecurePassword456"
+}
+```
+*   **Behavior:** 
+    1. Grabs the currently authenticated user's email from the JWT token.
+    2. Validates that `currentPassword` matches the one in the database.
+    3. Hashes and updates to `newPassword`.
+    4. Clears the `requirePasswordChange` flag if it was still active.
+    5. Returns a success message upon completion.
+

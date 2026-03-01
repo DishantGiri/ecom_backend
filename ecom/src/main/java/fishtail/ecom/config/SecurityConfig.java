@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/products", "/api/products/**").permitAll()
                         .requestMatchers("/api/images/**").permitAll()
                         .requestMatchers("/api/track/**").permitAll()
+                        .requestMatchers("/api/blogs", "/api/blogs/**").permitAll()
+                        .requestMatchers("/api/admin/forgot-password", "/api/admin/reset-password").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
