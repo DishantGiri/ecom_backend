@@ -40,4 +40,7 @@ public class ProductRequestDTO {
     private String benefits;
     private String guarantee;
     private String shippingInfo;
+ 
+    /** Order of sections (Description, Highlights, etc.) */
+    private List<String> sectionOrder;
 }

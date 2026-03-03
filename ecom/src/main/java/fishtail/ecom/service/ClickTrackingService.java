@@ -14,6 +14,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ClickTrackingService {
@@ -41,9 +45,31 @@ public class ClickTrackingService {
         clickStatRepository.save(stat);
     }
 
+    public List<fishtail.ecom.dto.ProductClickReportDTO> getClickReport() {
+        return clickStatRepository.findAll().stream()
+                .collect(Collectors.groupingBy(stat -> stat.getProduct().getTitle()))
+                .entrySet().stream()
+                .map(entry -> {
+                    String title = entry.getKey();
+                    List<ProductClickStat> stats = entry.getValue();
+
+                    Long totalClicks = stats.stream().mapToLong(ProductClickStat::getClickCount).sum();
+                    Map<String, Long> clicksByCountry = stats.stream()
+                            .collect(Collectors.toMap(ProductClickStat::getCountry, ProductClickStat::getClickCount));
+
+                    return fishtail.ecom.dto.ProductClickReportDTO.builder()
+                            .productTitle(title)
+                            .totalClicks(totalClicks)
+                            .clicksByCountry(clicksByCountry)
+                            .build();
+                })
+                .sorted((a, b) -> b.getTotalClicks().compareTo(a.getTotalClicks()))
+                .collect(Collectors.toList());
+    }
+
     public String resolveCountryFromIp(String ip) {
         if (ip == null || ip.isBlank() || ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1")) {
-            return "Unknown";
+            return "Local / Test";
         }
         try {
             // Using ip-api.com free endpoint for demo

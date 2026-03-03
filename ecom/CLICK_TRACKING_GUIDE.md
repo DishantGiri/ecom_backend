@@ -105,3 +105,38 @@ When you fetch a single product's details using `GET /api/products/{id}`, the ba
 ```
 
 You can use the `clickStats` array to build an admin dashboard that visualizes where your traffic is coming from!
+---
+
+## 📊 5. Admin Analytics Overview
+
+For managers who want to see a full birds-eye view of all product activity across the entire store, we have a specialized admin-only endpoint. This endpoint is designed to be **non-developer friendly**, returning actual product titles instead of IDs.
+
+*   **Endpoint:** `GET /api/admin/analytics/clicks`
+*   **Auth Required:** Yes (Requires Admin JWT)
+*   **Description:** Returns a list of all products that have received clicks, their total click count, and a breakdown by country.
+
+**Example Response:**
+```json
+[
+  {
+    "productTitle": "Nerve Freedom Pro",
+    "totalClicks": 179,
+    "clicksByCountry": {
+      "United States": 142,
+      "Canada": 35,
+      "Unknown": 2
+    }
+  },
+  {
+    "productTitle": "Daily Multi-Vitamin",
+    "totalClicks": 85,
+    "clicksByCountry": {
+      "Australia": 50,
+      "United Kingdom": 35
+    }
+  }
+]
+```
+
+### 📈 How to use this for the dashboard?
+This endpoint is perfect for building a **Top Products** table or a **Global Heatmap** for the admin dashboard. Since the response is already aggregated and sorted by total clicks (highest first), you can simply map over the list to render your charts!

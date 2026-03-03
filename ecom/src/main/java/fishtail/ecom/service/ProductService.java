@@ -64,6 +64,8 @@ public class ProductService {
                 .benefits(dto.getBenefits())
                 .guarantee(dto.getGuarantee())
                 .shippingInfo(dto.getShippingInfo())
+                .sectionOrder(
+                        dto.getSectionOrder() != null ? new ArrayList<>(dto.getSectionOrder()) : new ArrayList<>())
                 .galleryImages(new ArrayList<>())
                 .promotionalImages(new ArrayList<>())
                 .offers(new ArrayList<>())
@@ -202,6 +204,9 @@ public class ProductService {
         product.setBenefits(dto.getBenefits());
         product.setGuarantee(dto.getGuarantee());
         product.setShippingInfo(dto.getShippingInfo());
+        if (dto.getSectionOrder() != null) {
+            product.setSectionOrder(new ArrayList<>(dto.getSectionOrder()));
+        }
 
         // Replace product-level feature image if a new one is provided
         if (featureImage != null && !featureImage.isEmpty()) {
@@ -307,10 +312,73 @@ public class ProductService {
     // ──────────────────────────────────────────────────────────────────────────
 
     public List<ProductResponseDTO> searchByTitle(String keyword, String currency) {
-        return productRepository.findByTitleFuzzy(keyword)
-                .stream()
+        if (keyword == null || keyword.isBlank())
+            return List.of();
+
+        String lowerKeyword = keyword.trim().toLowerCase();
+
+        // 1. Exact / substring matches (fast DB query)
+        List<Product> exactMatches = productRepository.findByTitleContainingIgnoreCase(lowerKeyword);
+        Set<Long> exactIds = exactMatches.stream().map(Product::getId).collect(Collectors.toSet());
+
+        // 2. Levenshtein fuzzy matching against all product titles
+        // Tolerates ~30% edit distance (e.g. "nervre" → "nerve" = 1 edit / 5 chars =
+        // 20%)
+        List<Product> allProducts = productRepository.findAll();
+        List<Product> fuzzyMatches = allProducts.stream()
+                .filter(p -> !exactIds.contains(p.getId())) // don't duplicate exact results
+                .filter(p -> {
+                    String title = p.getTitle().toLowerCase();
+                    // Check each word in the title independently (multi-word titles)
+                    String[] titleWords = title.split("\\s+");
+                    for (String word : titleWords) {
+                        int maxAllowedEdits = Math.max(1, (int) Math.floor(word.length() * 0.35));
+                        if (levenshtein(lowerKeyword, word) <= maxAllowedEdits) {
+                            return true;
+                        }
+                    }
+                    // Also check against the whole title if it's a short query
+                    if (lowerKeyword.length() <= title.length()) {
+                        int maxAllowedEdits = Math.max(1, (int) Math.floor(lowerKeyword.length() * 0.35));
+                        if (levenshtein(lowerKeyword, title) <= maxAllowedEdits) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .collect(Collectors.toList());
+
+        // Combine: exact first, then fuzzy
+        List<Product> combined = new ArrayList<>(exactMatches);
+        combined.addAll(fuzzyMatches);
+
+        return combined.stream()
                 .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Classic dynamic-programming Levenshtein (edit) distance.
+     * Lower = more similar. 0 means exact match.
+     */
+    private int levenshtein(String a, String b) {
+        int[] dp = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++)
+            dp[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            int prev = dp[0];
+            dp[0] = i;
+            for (int j = 1; j <= b.length(); j++) {
+                int temp = dp[j];
+                if (a.charAt(i - 1) == b.charAt(j - 1)) {
+                    dp[j] = prev;
+                } else {
+                    dp[j] = 1 + Math.min(prev, Math.min(dp[j], dp[j - 1]));
+                }
+                prev = temp;
+            }
+        }
+        return dp[b.length()];
     }
 
     public List<ProductResponseDTO> getByCategory(String category, String currency) {
@@ -459,6 +527,8 @@ public class ProductService {
                 .benefits(product.getBenefits())
                 .guarantee(product.getGuarantee())
                 .shippingInfo(product.getShippingInfo())
+                .sectionOrder(product.getSectionOrder() != null ? new ArrayList<>(product.getSectionOrder())
+                        : new ArrayList<>())
                 .offers(offerDTOs)
                 .clickStats(stats)
                 .createdAt(product.getCreatedAt())

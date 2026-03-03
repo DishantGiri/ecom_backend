@@ -68,6 +68,14 @@ public class Product {
 
     @Column(name = "shipping_info", columnDefinition = "TEXT")
     private String shippingInfo;
+ 
+    /** Order of sections (Description, Highlights, etc.) */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_section_order", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "section_key")
+    @OrderColumn(name = "display_order")
+    @Builder.Default
+    private List<String> sectionOrder = new ArrayList<>();
 
     /** Gallery images */
     @ElementCollection(fetch = FetchType.EAGER)

@@ -56,6 +56,9 @@ public class ProductResponseDTO {
     private String guarantee;
     private String shippingInfo;
 
+    /** Order of sections (Description, Highlights, etc.) */
+    private List<String> sectionOrder;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
