@@ -9,8 +9,8 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-        /** Case-insensitive search by category */
-        List<Product> findByCategoryIgnoreCase(String category);
+        /** Case-insensitive search by category name */
+        List<Product> findByCategoryNameIgnoreCase(String categoryName);
 
         /** Case-insensitive partial match on title */
         List<Product> findByTitleContainingIgnoreCase(String keyword);
@@ -20,17 +20,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         List<Product> findByTitleFuzzy(String keyword);
 
         /** Find products in the same category, excluding the product itself */
-        @org.springframework.data.jpa.repository.Query("SELECT p FROM Product p WHERE p.category = :category AND p.id != :id")
-        List<Product> findByCategoryAndIdNot(String category, Long id);
+        @org.springframework.data.jpa.repository.Query("SELECT p FROM Product p WHERE p.category.id = :categoryId AND p.id != :id")
+        List<Product> findByCategoryIdAndIdNot(Long categoryId, Long id);
 
         /**
          * Find products in the same category within a price range, excluding the
          * product itself
          */
-        @org.springframework.data.jpa.repository.Query("SELECT p FROM Product p WHERE p.category = :category AND p.id != :id "
+        @org.springframework.data.jpa.repository.Query("SELECT p FROM Product p WHERE p.category.id = :categoryId AND p.id != :id "
                         +
                         "AND p.discountedPrice BETWEEN :minPrice AND :maxPrice")
-        List<Product> findSimilarProducts(String category, Long id, java.math.BigDecimal minPrice,
+        List<Product> findSimilarProducts(Long categoryId, Long id, java.math.BigDecimal minPrice,
                         java.math.BigDecimal maxPrice);
 
         /** Get products ordered by total clicks descending (most popular first) */

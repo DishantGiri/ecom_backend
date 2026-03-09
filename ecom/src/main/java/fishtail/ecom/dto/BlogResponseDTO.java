@@ -19,6 +19,8 @@ public class BlogResponseDTO {
 
     private String content;
 
+    private String intro;
+
     private String featureImageUrl;
 
     private String author;

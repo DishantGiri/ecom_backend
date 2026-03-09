@@ -38,7 +38,7 @@ Admin endpoints require a **JWT Token** in the header:
   "starRating": 4.5,
   "originalPrice": 59.95,
   "discountedPrice": 24.95,
-  "category": "Supplements",
+  "categoryId": 1,
   "productLink": "https://example.com/item",
   "description": "Enjoy the natural support of our Nerve Freedom Pro...",
   "highlights": "🧠 Supports healthy nerve function\n⚕️ Promotes improved blood circulation\n⚡ Helps maintain consistent energy levels",

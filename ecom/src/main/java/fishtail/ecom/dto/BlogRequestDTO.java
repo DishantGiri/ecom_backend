@@ -18,6 +18,9 @@ public class BlogRequestDTO {
     // HTML string from the rich text editor (e.g., Quill, TinyMCE, TipTap)
     private String content;
 
+    // Short blockquote / intro section displayed prominently below the header image
+    private String intro;
+
     private String author;
 
     // Optional SEO Overrides (if left blank, we can auto-generate them in service)

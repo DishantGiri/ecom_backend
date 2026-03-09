@@ -1,10 +1,13 @@
 package fishtail.ecom.service;
 
+import fishtail.ecom.dto.CategoryDTO;
 import fishtail.ecom.dto.ProductOfferDTO;
 import fishtail.ecom.dto.ProductRequestDTO;
 import fishtail.ecom.dto.ProductResponseDTO;
+import fishtail.ecom.entity.Category;
 import fishtail.ecom.entity.Product;
 import fishtail.ecom.entity.ProductOffer;
+import fishtail.ecom.repository.CategoryRepository;
 import fishtail.ecom.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CurrencyService currencyService;
+    private final CategoryRepository categoryRepository;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -50,6 +55,14 @@ public class ProductService {
 
         validateStarRating(dto.getStarRating());
 
+        Category category = null;
+        if (dto.getCategoryId() != null) {
+            category = categoryRepository.findById(dto.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found with id: " + dto.getCategoryId()));
+        } else if (dto.getCategory() != null && !dto.getCategory().isBlank()) {
+            category = categoryRepository.findByNameIgnoreCase(dto.getCategory()).orElse(null);
+        }
+
         Product product = Product.builder()
                 .title(dto.getTitle())
                 .numberOfReviews(dto.getNumberOfReviews())
@@ -57,7 +70,7 @@ public class ProductService {
                 .originalPrice(dto.getOriginalPrice())
                 .discountedPrice(dto.getDiscountedPrice())
                 .productLink(dto.getProductLink())
-                .category(dto.getCategory())
+                .category(category)
                 .description(dto.getDescription())
                 .highlights(dto.getHighlights())
                 .directions(dto.getDirections())
@@ -152,7 +165,7 @@ public class ProductService {
                 : java.math.BigDecimal.valueOf(999999);
 
         List<Product> similarProducts = productRepository.findSimilarProducts(
-                product.getCategory(),
+                product.getCategory() != null ? product.getCategory().getId() : null,
                 product.getId(),
                 minPrice,
                 maxPrice);
@@ -197,7 +210,18 @@ public class ProductService {
         product.setOriginalPrice(dto.getOriginalPrice());
         product.setDiscountedPrice(dto.getDiscountedPrice());
         product.setProductLink(dto.getProductLink());
-        product.setCategory(dto.getCategory());
+
+        if (dto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(dto.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found with id: " + dto.getCategoryId()));
+            product.setCategory(category);
+        } else if (dto.getCategory() != null && !dto.getCategory().isBlank()) {
+            Category category = categoryRepository.findByNameIgnoreCase(dto.getCategory()).orElse(null);
+            product.setCategory(category);
+        } else {
+            product.setCategory(null);
+        }
+
         product.setDescription(dto.getDescription());
         product.setHighlights(dto.getHighlights());
         product.setDirections(dto.getDirections());
@@ -382,7 +406,7 @@ public class ProductService {
     }
 
     public List<ProductResponseDTO> getByCategory(String category, String currency) {
-        return productRepository.findByCategoryIgnoreCase(category)
+        return productRepository.findByCategoryNameIgnoreCase(category)
                 .stream()
                 .map(p -> toResponseDTO(p, false, currency))
                 .collect(Collectors.toList());
@@ -508,6 +532,19 @@ public class ProductService {
                                 .build())
                         .collect(Collectors.toList());
 
+        CategoryDTO categoryDTO = null;
+        if (product.getCategory() != null) {
+            String catImageUrl = (product.getCategory().getImageUrl() != null
+                    && !product.getCategory().getImageUrl().isBlank())
+                            ? baseUrl + "/api/images/" + product.getCategory().getImageUrl()
+                            : null;
+            categoryDTO = CategoryDTO.builder()
+                    .id(product.getCategory().getId())
+                    .name(product.getCategory().getName())
+                    .imageUrl(catImageUrl)
+                    .build();
+        }
+
         return ProductResponseDTO.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -520,7 +557,7 @@ public class ProductService {
                 .galleryImageUrls(galleryUrls)
                 .promotionalImageUrls(promotionalUrls)
                 .productLink(product.getProductLink())
-                .category(product.getCategory())
+                .category(categoryDTO)
                 .description(product.getDescription())
                 .highlights(product.getHighlights())
                 .directions(product.getDirections())

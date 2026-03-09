@@ -37,6 +37,7 @@ public class BlogService {
         Blog blog = Blog.builder()
                 .title(dto.getTitle())
                 .slug(slug)
+                .intro(dto.getIntro())
                 .content(dto.getContent())
                 .author(dto.getAuthor())
                 .metaTitle(dto.getMetaTitle() != null && !dto.getMetaTitle().isBlank() ? dto.getMetaTitle()
@@ -64,6 +65,7 @@ public class BlogService {
             blog.setSlug(generateSlug(dto.getTitle())); // Regenerate slug if title changes
         }
 
+        blog.setIntro(dto.getIntro());
         blog.setContent(dto.getContent());
         blog.setAuthor(dto.getAuthor());
 
@@ -156,6 +158,7 @@ public class BlogService {
                 .id(blog.getId())
                 .title(blog.getTitle())
                 .slug(blog.getSlug())
+                .intro(blog.getIntro())
                 .content(blog.getContent())
                 .featureImageUrl(featureUrl)
                 .author(blog.getAuthor())

@@ -36,7 +36,7 @@ public class ProductResponseDTO {
 
     private String productLink;
 
-    private String category;
+    private CategoryDTO category;
 
     private List<ProductOfferDTO> offers;
 

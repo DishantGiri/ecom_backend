@@ -42,8 +42,9 @@ public class Product {
     @Column(name = "product_link")
     private String productLink;
 
-    @Column(name = "category")
-    private String category;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -68,7 +69,7 @@ public class Product {
 
     @Column(name = "shipping_info", columnDefinition = "TEXT")
     private String shippingInfo;
- 
+
     /** Order of sections (Description, Highlights, etc.) */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "product_section_order", joinColumns = @JoinColumn(name = "product_id"))

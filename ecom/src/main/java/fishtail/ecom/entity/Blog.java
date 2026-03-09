@@ -24,6 +24,9 @@ public class Blog {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    @Column(columnDefinition = "TEXT")
+    private String intro; // Short blockquote / intro paragraph shown below the feature image
+
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String content; // Rich text HTML content
 

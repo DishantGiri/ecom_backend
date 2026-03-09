@@ -29,6 +29,7 @@ public class ProductRequestDTO {
 
     private String productLink;
 
+    private Long categoryId;
     private String category;
 
     /** List of offer/bundle types for this product */
@@ -40,7 +41,7 @@ public class ProductRequestDTO {
     private String benefits;
     private String guarantee;
     private String shippingInfo;
- 
+
     /** Order of sections (Description, Highlights, etc.) */
     private List<String> sectionOrder;
 }
