@@ -473,8 +473,9 @@ public class ProductService {
     }
 
     private ProductOfferDTO toOfferDTO(ProductOffer offer, String currency) {
+        String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         String offerImageUrl = (offer.getFeatureImage() != null && !offer.getFeatureImage().isBlank())
-                ? baseUrl + "/api/images/" + offer.getFeatureImage()
+                ? cleanBaseUrl + "/api/images/" + offer.getFeatureImage()
                 : null;
 
         java.math.BigDecimal originalConverted = currencyService.convertFromUsd(offer.getOriginalPrice(), currency);
@@ -496,6 +497,8 @@ public class ProductService {
         String currency = (requestCurrency == null || requestCurrency.isBlank()) ? "USD"
                 : requestCurrency.toUpperCase();
 
+        String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+
         // Sort offers by displayOrder
         List<ProductOffer> sortedOffers = product.getOffers() == null ? Collections.emptyList()
                 : product.getOffers().stream()
@@ -507,20 +510,20 @@ public class ProductService {
                 .collect(Collectors.toList());
 
         String featureUrl = (product.getFeatureImage() != null && !product.getFeatureImage().isBlank())
-                ? baseUrl + "/api/images/" + product.getFeatureImage()
+                ? cleanBaseUrl + "/api/images/" + product.getFeatureImage()
                 : null;
 
         List<String> galleryUrls = new ArrayList<>();
         if (product.getGalleryImages() != null) {
             product.getGalleryImages().stream()
-                    .map(f -> baseUrl + "/api/images/" + f)
+                    .map(f -> cleanBaseUrl + "/api/images/" + f)
                     .forEach(galleryUrls::add);
         }
 
         List<String> promotionalUrls = new ArrayList<>();
         if (product.getPromotionalImages() != null) {
             product.getPromotionalImages().stream()
-                    .map(f -> baseUrl + "/api/images/" + f)
+                    .map(f -> cleanBaseUrl + "/api/images/" + f)
                     .forEach(promotionalUrls::add);
         }
 
@@ -536,7 +539,7 @@ public class ProductService {
         if (product.getCategory() != null) {
             String catImageUrl = (product.getCategory().getImageUrl() != null
                     && !product.getCategory().getImageUrl().isBlank())
-                            ? baseUrl + "/api/images/" + product.getCategory().getImageUrl()
+                            ? cleanBaseUrl + "/api/images/" + product.getCategory().getImageUrl()
                             : null;
             categoryDTO = CategoryDTO.builder()
                     .id(product.getCategory().getId())

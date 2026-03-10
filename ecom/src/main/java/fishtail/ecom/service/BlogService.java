@@ -150,8 +150,9 @@ public class BlogService {
     }
 
     private BlogResponseDTO toResponseDTO(Blog blog) {
+        String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         String featureUrl = (blog.getFeatureImage() != null && !blog.getFeatureImage().isBlank())
-                ? baseUrl + "/api/images/" + blog.getFeatureImage()
+                ? cleanBaseUrl + "/api/images/" + blog.getFeatureImage()
                 : null;
 
         return BlogResponseDTO.builder()

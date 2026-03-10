@@ -83,8 +83,9 @@ public class CategoryService {
     }
 
     private CategoryDTO toDTO(Category category) {
+        String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         String fullImageUrl = (category.getImageUrl() != null && !category.getImageUrl().isBlank())
-                ? baseUrl + "/api/images/" + category.getImageUrl()
+                ? cleanBaseUrl + "/api/images/" + category.getImageUrl()
                 : null;
 
         return CategoryDTO.builder()
