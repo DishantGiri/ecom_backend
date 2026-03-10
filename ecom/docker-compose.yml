@@ -10,6 +10,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=mysql
       - SPRING_DATASOURCE_PASSWORD=mQvRHM2eWfuF4GlqlNn94J3iy8hCRzEMymO2f3fwEVmpgV53FCXWPCCZ4bwIcmRA
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       - mysql
 

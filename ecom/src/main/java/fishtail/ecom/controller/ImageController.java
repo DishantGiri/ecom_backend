@@ -2,14 +2,13 @@ package fishtail.ecom.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -30,12 +29,13 @@ public class ImageController {
      * GET /api/images/{filename}
      * Returns the image file as a byte stream.
      */
-    @GetMapping("/{filename}")
-    public ResponseEntity<Resource> serveImage(@PathVariable String filename) throws MalformedURLException {
-        Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
-        Resource resource = new UrlResource(filePath.toUri());
+    @GetMapping("/{filename:.+}")
+    public ResponseEntity<Resource> serveImage(@PathVariable String filename) {
+        Path filePath = Paths.get(uploadDir).resolve(filename).normalize().toAbsolutePath();
+        FileSystemResource resource = new FileSystemResource(filePath.toFile());
 
         if (!resource.exists() || !resource.isReadable()) {
+            System.err.println("Image not found or not readable: " + filePath);
             return ResponseEntity.notFound().build();
         }
 
