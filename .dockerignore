@@ -1,0 +1,16 @@
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+.git/
+.gitignore
+.idea/
+.vscode/
+**/*.log
+**/uploads/
+**/boot_log.txt
+**/run_output.txt
+**/effective_pom.xml
