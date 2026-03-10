@@ -4,16 +4,16 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "8083:8083"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/default?ssl-mode=REQUIRED/ecom
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/default?createDatabaseIfNotExist=true&ssl-mode=REQUIRED
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=mQvRHM2eWfuF4GlqlNn94J3iy8hCRzEMymO2f3fwEVmpgV53FCXWPCCZ4bwIcmRA
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     depends_on:
-      - database
+      - mysql
 
-  database:
+  mysql:
     image: mysql:8.3
     environment:
       - MYSQL_DATABASE=default

@@ -22,7 +22,7 @@ RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 # Set environment variables (can be overridden at runtime)
 ENV SPRING_PROFILES_ACTIVE=prod
 
-EXPOSE 8080
+EXPOSE 8083
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
