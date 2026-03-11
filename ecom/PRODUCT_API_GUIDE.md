@@ -34,6 +34,7 @@ Admin endpoints require a **JWT Token** in the header:
 ```json
 {
   "title": "Nerve Freedom Pro",
+  "ribbon": "#1 Best Seller",
   "numberOfReviews": 115,
   "starRating": 4.5,
   "originalPrice": 59.95,
@@ -42,6 +43,11 @@ Admin endpoints require a **JWT Token** in the header:
   "productLink": "https://example.com/item",
   "description": "Enjoy the natural support of our Nerve Freedom Pro...",
   "highlights": "🧠 Supports healthy nerve function\n⚕️ Promotes improved blood circulation\n⚡ Helps maintain consistent energy levels",
+  "details": "Weight: 1kg\nDimensions: 10x10x10",
+  "customFields": [
+    { "fieldName": "How to Use", "fieldValue": "Take 2 pills with water.", "displayOrder": 1 },
+    { "fieldName": "Allergens", "fieldValue": "Contains soy and dairy.", "displayOrder": 2 }
+  ],
   "directions": "For optimal results, take one (1) capsule per day with food...",
   "benefits": "- Supports healthy nerve function and promotes optimal blood circulation...",
   "guarantee": "30-Day Money Back Guarantee\nAt Supplements Fast, we stand behind...",
@@ -71,6 +77,65 @@ Admin endpoints require a **JWT Token** in the header:
     *   `/api/admin/products/{id}/gallery/{filename}`
     *   `/api/admin/products/{id}/promotional/{filename}`
 *   **Result:** Deletes the specific image file from the database array and the server disk.
+
+### 5. Bulk Upload Products
+*   **Method:** `POST`
+*   **URL:** `/api/admin/products/bulk-upload`
+*   **Content-Type:** `multipart/form-data`
+
+| Part Name | Type | Description |
+| :--- | :--- | :--- |
+| `file` | File | A CSV file containing product data. |
+
+**Expected CSV Headers (case-insensitive):**
+* `title` (Required)
+* `category`, `categoryId`, or `category_id` (Matches by ID or exact category name)
+* `originalPrice` or `original_price`
+* `discountedPrice` or `discounted_price`
+* `numberOfReviews` or `number_of_reviews`
+* `starRating` or `star_rating`
+* `productLink` or `product_link`
+* `description`
+* `highlights`
+* `details`
+
+> **Note**: Products created via bulk upload will automatically be assigned a random feature image from the existing products in the database.
+
+---
+
+### 6. Content Snippets (Reusable Text Blocks)
+This feature allows an admin to save reusable blocks of text (like "Standard Shipping Policy" or "Summer Guarantee") to instantly insert them into a product's fields when adding or editing a product via the frontend context.
+
+*   `GET /api/admin/snippets` - List all snippets
+*   `POST /api/admin/snippets` - Create a new snippet
+    *   **Payload:** `{"name": "Standard Shipping", "content": "Delivery in 3-4 days..."}`
+*   `PUT /api/admin/snippets/{id}` - Update a snippet
+*   `DELETE /api/admin/snippets/{id}` - Delete a snippet
+
+---
+
+### 7. Product Reviews (Admin Added)
+This feature allows the admin to attach highly customized user reviews directly to a product, complete with the reviewer's name, star rating, and a review image (like a photo of the product in use).
+
+*   **Create a Review:** `POST /api/admin/products/{productId}/reviews`
+    *   **Content-Type:** `multipart/form-data`
+    *   **Payload Parts:**
+        *   `reviewerName` (Text)
+        *   `reviewText` (Text)
+        *   `starRating` (Text/Double, Optional)
+        *   `image` (File, Optional) - Stores as `imageUrl`
+
+*   **Update a Review:** `PUT /api/admin/products/reviews/{reviewId}`
+    *   **Content-Type:** `multipart/form-data`
+    *   **Payload Parts:** (Same as Create)
+        *   `reviewerName` (Text)
+        *   `reviewText` (Text)
+        *   `starRating` (Text/Double, Optional)
+        *   `image` (File, Optional) - Replace existing image
+
+*   **Delete a Review:** `DELETE /api/admin/products/reviews/{reviewId}`
+
+> **Note**: Fetching the product via the global `GET /api/products/{id}` automatically includes an ordered array of these `reviews` alongside the product data.
 
 ---
 

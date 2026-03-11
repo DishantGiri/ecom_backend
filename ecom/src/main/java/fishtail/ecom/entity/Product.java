@@ -24,6 +24,9 @@ public class Product {
     @Column(nullable = false)
     private String title;
 
+    @Column(name = "ribbon")
+    private String ribbon;
+
     @Column(name = "number_of_reviews")
     private Integer numberOfReviews;
 
@@ -57,6 +60,9 @@ public class Product {
 
     @Column(name = "highlights", columnDefinition = "TEXT")
     private String highlights;
+
+    @Column(name = "details", columnDefinition = "TEXT")
+    private String details;
 
     @Column(name = "directions", columnDefinition = "TEXT")
     private String directions;
@@ -97,10 +103,20 @@ public class Product {
     @Builder.Default
     private List<ProductOffer> offers = new ArrayList<>();
 
+    /** Custom admin fields (dynamic sections) */
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @Builder.Default
+    private List<ProductCustomField> customFields = new ArrayList<>();
+
     /** Click analytics per country */
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ProductClickStat> clickStats = new ArrayList<>();
+
+    /** Customer Reviews added by Admin */
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ProductReview> reviews = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

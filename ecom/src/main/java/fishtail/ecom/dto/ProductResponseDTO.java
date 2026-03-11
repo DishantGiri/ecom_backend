@@ -17,6 +17,8 @@ public class ProductResponseDTO {
 
     private String title;
 
+    private String ribbon;
+
     private Integer numberOfReviews;
 
     private Double starRating;
@@ -46,15 +48,22 @@ public class ProductResponseDTO {
     /** Analytics: Clicks per Country */
     private List<ProductClickStatDTO> clickStats;
 
+    /** Admin-added customer reviews */
+    private List<ProductReviewDTO> reviews;
+
     /** E.g., USD, EUR, GBP (defaults to USD) */
     private String currency;
 
     private String description;
     private String highlights;
+    private String details;
     private String directions;
     private String benefits;
     private String guarantee;
     private String shippingInfo;
+
+    /** List of dynamic custom fields created by an admin */
+    private List<ProductCustomFieldDTO> customFields;
 
     /** Order of sections (Description, Highlights, etc.) */
     private List<String> sectionOrder;

@@ -39,4 +39,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                         "GROUP BY p.id " +
                         "ORDER BY COALESCE(SUM(cs.clickCount), 0) DESC")
         List<Product> findAllOrderByTotalClicksDesc();
+
+        /** Get all existing feature images to randomly pick from during bulk upload */
+        @org.springframework.data.jpa.repository.Query(value = "SELECT feature_image FROM products WHERE feature_image IS NOT NULL", nativeQuery = true)
+        List<String> findAllFeatureImages();
 }

@@ -46,6 +46,12 @@ public class ProductController {
                 .ok(productService.createProduct(dto, featureImage, galleryImages, promotionalImages, offerImages));
     }
 
+    @PostMapping(value = "/api/admin/products/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<List<ProductResponseDTO>> bulkUploadProducts(@RequestPart("file") MultipartFile file)
+            throws IOException {
+        return ResponseEntity.ok(productService.bulkUpload(file));
+    }
+
     @GetMapping("/api/admin/products")
     public ResponseEntity<List<ProductResponseDTO>> getAllProductsAdmin() {
         return ResponseEntity.ok(productService.getAllProducts("USD"));

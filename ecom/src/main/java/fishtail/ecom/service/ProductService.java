@@ -21,6 +21,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.Optional;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -65,6 +73,7 @@ public class ProductService {
 
         Product product = Product.builder()
                 .title(dto.getTitle())
+                .ribbon(dto.getRibbon())
                 .numberOfReviews(dto.getNumberOfReviews())
                 .starRating(dto.getStarRating())
                 .originalPrice(dto.getOriginalPrice())
@@ -73,6 +82,7 @@ public class ProductService {
                 .category(category)
                 .description(dto.getDescription())
                 .highlights(dto.getHighlights())
+                .details(dto.getDetails())
                 .directions(dto.getDirections())
                 .benefits(dto.getBenefits())
                 .guarantee(dto.getGuarantee())
@@ -82,6 +92,7 @@ public class ProductService {
                 .galleryImages(new ArrayList<>())
                 .promotionalImages(new ArrayList<>())
                 .offers(new ArrayList<>())
+                .customFields(new ArrayList<>())
                 .build();
 
         // Save product-level feature image
@@ -122,15 +133,114 @@ public class ProductService {
             }
         }
 
+        // Attach dynamic custom fields
+        if (dto.getCustomFields() != null) {
+            for (fishtail.ecom.dto.ProductCustomFieldDTO cfDTO : dto.getCustomFields()) {
+                product.getCustomFields().add(buildCustomField(cfDTO, product));
+            }
+        }
+
         product = productRepository.save(product);
-        // We pass "USD" natively when returning from Admin update actions,
-        // as admins are managing USD prices.
         return toResponseDTO(product, true, "USD");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // READ ALL & POPULAR
+    // BULK UPLOAD
     // ──────────────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public List<ProductResponseDTO> bulkUpload(MultipartFile file) throws IOException {
+        List<Product> products = new ArrayList<>();
+        List<String> allImages = productRepository.findAllFeatureImages();
+        Random random = new Random();
+
+        try (BufferedReader fileReader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
+                CSVParser csvParser = new CSVParser(fileReader,
+                        CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim())) {
+
+            for (CSVRecord csvRecord : csvParser) {
+                // Title
+                String title = csvRecord.isMapped("title") ? csvRecord.get("title") : null;
+                if (title == null || title.isBlank())
+                    continue;
+
+                // Prices
+                BigDecimal originalPrice = BigDecimal.ZERO;
+                if (csvRecord.isMapped("original_price") && !csvRecord.get("original_price").isBlank()) {
+                    originalPrice = new BigDecimal(csvRecord.get("original_price"));
+                } else if (csvRecord.isMapped("originalPrice") && !csvRecord.get("originalPrice").isBlank()) {
+                    originalPrice = new BigDecimal(csvRecord.get("originalPrice"));
+                }
+
+                BigDecimal discountedPrice = null;
+                if (csvRecord.isMapped("discounted_price") && !csvRecord.get("discounted_price").isBlank()) {
+                    discountedPrice = new BigDecimal(csvRecord.get("discounted_price"));
+                } else if (csvRecord.isMapped("discountedPrice") && !csvRecord.get("discountedPrice").isBlank()) {
+                    discountedPrice = new BigDecimal(csvRecord.get("discountedPrice"));
+                }
+
+                // Reviews & Rating
+                Integer numberOfReviews = 0;
+                if (csvRecord.isMapped("number_of_reviews") && !csvRecord.get("number_of_reviews").isBlank()) {
+                    numberOfReviews = Integer.parseInt(csvRecord.get("number_of_reviews"));
+                } else if (csvRecord.isMapped("numberOfReviews") && !csvRecord.get("numberOfReviews").isBlank()) {
+                    numberOfReviews = Integer.parseInt(csvRecord.get("numberOfReviews"));
+                }
+
+                Double starRating = 5.0;
+                if (csvRecord.isMapped("star_rating") && !csvRecord.get("star_rating").isBlank()) {
+                    starRating = Double.parseDouble(csvRecord.get("star_rating"));
+                } else if (csvRecord.isMapped("starRating") && !csvRecord.get("starRating").isBlank()) {
+                    starRating = Double.parseDouble(csvRecord.get("starRating"));
+                }
+
+                String productLink = csvRecord.isMapped("product_link") ? csvRecord.get("product_link") : null;
+                if (productLink == null && csvRecord.isMapped("productLink")) {
+                    productLink = csvRecord.get("productLink");
+                }
+
+                // Category
+                Category category = null;
+                if (csvRecord.isMapped("category_id") && !csvRecord.get("category_id").isBlank()) {
+                    category = categoryRepository.findById(Long.parseLong(csvRecord.get("category_id"))).orElse(null);
+                } else if (csvRecord.isMapped("categoryId") && !csvRecord.get("categoryId").isBlank()) {
+                    category = categoryRepository.findById(Long.parseLong(csvRecord.get("categoryId"))).orElse(null);
+                } else if (csvRecord.isMapped("category") && !csvRecord.get("category").isBlank()) {
+                    category = categoryRepository.findByNameIgnoreCase(csvRecord.get("category")).orElse(null);
+                }
+
+                String featureImage = null;
+                if (allImages != null && !allImages.isEmpty()) {
+                    featureImage = allImages.get(random.nextInt(allImages.size()));
+                }
+
+                Product product = Product.builder()
+                        .title(title)
+                        .originalPrice(originalPrice)
+                        .discountedPrice(discountedPrice)
+                        .numberOfReviews(numberOfReviews)
+                        .starRating(starRating)
+                        .productLink(productLink)
+                        .category(category)
+                        .featureImage(featureImage)
+                        .description(csvRecord.isMapped("description") ? csvRecord.get("description") : "")
+                        .highlights(csvRecord.isMapped("highlights") ? csvRecord.get("highlights") : "")
+                        .details(csvRecord.isMapped("details") ? csvRecord.get("details") : "")
+                        .sectionOrder(new ArrayList<>())
+                        .galleryImages(new ArrayList<>())
+                        .promotionalImages(new ArrayList<>())
+                        .offers(new ArrayList<>())
+                        .customFields(new ArrayList<>())
+                        .build();
+
+                products.add(product);
+            }
+        }
+
+        List<Product> savedProducts = productRepository.saveAll(products);
+        return savedProducts.stream().map(p -> toResponseDTO(p, false, "USD")).collect(Collectors.toList());
+    }
 
     public List<ProductResponseDTO> getAllProducts(String currency) {
         return productRepository.findAll()
@@ -146,23 +256,15 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // READ ONE
-    // ──────────────────────────────────────────────────────────────────────────
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // READ ONE
-    // ──────────────────────────────────────────────────────────────────────────
-
     public ProductResponseDTO getProductById(Long id, String currency) {
         Product product = findOrThrow(id);
 
-        java.math.BigDecimal minPrice = product.getDiscountedPrice() != null
-                ? product.getDiscountedPrice().multiply(java.math.BigDecimal.valueOf(0.5))
-                : java.math.BigDecimal.ZERO;
-        java.math.BigDecimal maxPrice = product.getDiscountedPrice() != null
-                ? product.getDiscountedPrice().multiply(java.math.BigDecimal.valueOf(1.5))
-                : java.math.BigDecimal.valueOf(999999);
+        BigDecimal minPrice = product.getDiscountedPrice() != null
+                ? product.getDiscountedPrice().multiply(BigDecimal.valueOf(0.5))
+                : BigDecimal.ZERO;
+        BigDecimal maxPrice = product.getDiscountedPrice() != null
+                ? product.getDiscountedPrice().multiply(BigDecimal.valueOf(1.5))
+                : BigDecimal.valueOf(999999);
 
         List<Product> similarProducts = productRepository.findSimilarProducts(
                 product.getCategory() != null ? product.getCategory().getId() : null,
@@ -205,6 +307,7 @@ public class ProductService {
         Product product = findOrThrow(id);
 
         product.setTitle(dto.getTitle());
+        product.setRibbon(dto.getRibbon());
         product.setNumberOfReviews(dto.getNumberOfReviews());
         product.setStarRating(dto.getStarRating());
         product.setOriginalPrice(dto.getOriginalPrice());
@@ -224,6 +327,7 @@ public class ProductService {
 
         product.setDescription(dto.getDescription());
         product.setHighlights(dto.getHighlights());
+        product.setDetails(dto.getDetails());
         product.setDirections(dto.getDirections());
         product.setBenefits(dto.getBenefits());
         product.setGuarantee(dto.getGuarantee());
@@ -273,9 +377,15 @@ public class ProductService {
             }
         }
 
+        // Replace custom fields
+        product.getCustomFields().clear();
+        if (dto.getCustomFields() != null) {
+            for (fishtail.ecom.dto.ProductCustomFieldDTO cfDTO : dto.getCustomFields()) {
+                product.getCustomFields().add(buildCustomField(cfDTO, product));
+            }
+        }
+
         product = productRepository.save(product);
-        // We pass "USD" natively when returning from Admin update actions,
-        // as admins are managing USD prices.
         return toResponseDTO(product, true, "USD");
     }
 
@@ -286,13 +396,9 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = findOrThrow(id);
-        // Delete product-level feature image
         deleteFileIfExists(product.getFeatureImage());
-        // Delete gallery images
         product.getGalleryImages().forEach(this::deleteFileIfExists);
-        // Delete promotional images
         product.getPromotionalImages().forEach(this::deleteFileIfExists);
-        // Delete per-offer feature images
         product.getOffers().forEach(o -> deleteFileIfExists(o.getFeatureImage()));
         productRepository.delete(product);
     }
@@ -309,8 +415,6 @@ public class ProductService {
             deleteFileIfExists(filename);
         }
         product = productRepository.save(product);
-        // We pass "USD" natively when returning from Admin update actions,
-        // as admins are managing USD prices.
         return toResponseDTO(product, true, "USD");
     }
 
@@ -326,8 +430,6 @@ public class ProductService {
             deleteFileIfExists(filename);
         }
         product = productRepository.save(product);
-        // We pass "USD" natively when returning from Admin update actions,
-        // as admins are managing USD prices.
         return toResponseDTO(product, true, "USD");
     }
 
@@ -346,14 +448,11 @@ public class ProductService {
         Set<Long> exactIds = exactMatches.stream().map(Product::getId).collect(Collectors.toSet());
 
         // 2. Levenshtein fuzzy matching against all product titles
-        // Tolerates ~30% edit distance (e.g. "nervre" → "nerve" = 1 edit / 5 chars =
-        // 20%)
         List<Product> allProducts = productRepository.findAll();
         List<Product> fuzzyMatches = allProducts.stream()
-                .filter(p -> !exactIds.contains(p.getId())) // don't duplicate exact results
+                .filter(p -> !exactIds.contains(p.getId()))
                 .filter(p -> {
                     String title = p.getTitle().toLowerCase();
-                    // Check each word in the title independently (multi-word titles)
                     String[] titleWords = title.split("\\s+");
                     for (String word : titleWords) {
                         int maxAllowedEdits = Math.max(1, (int) Math.floor(word.length() * 0.35));
@@ -361,7 +460,6 @@ public class ProductService {
                             return true;
                         }
                     }
-                    // Also check against the whole title if it's a short query
                     if (lowerKeyword.length() <= title.length()) {
                         int maxAllowedEdits = Math.max(1, (int) Math.floor(lowerKeyword.length() * 0.35));
                         if (levenshtein(lowerKeyword, title) <= maxAllowedEdits) {
@@ -372,7 +470,6 @@ public class ProductService {
                 })
                 .collect(Collectors.toList());
 
-        // Combine: exact first, then fuzzy
         List<Product> combined = new ArrayList<>(exactMatches);
         combined.addAll(fuzzyMatches);
 
@@ -427,7 +524,6 @@ public class ProductService {
         if (rating < 0.5 || rating > 5.0) {
             throw new IllegalArgumentException("Star rating must be between 0.5 and 5.0");
         }
-        // Ensure it's a multiple of 0.5
         if ((rating * 10) % 5 != 0) {
             throw new IllegalArgumentException("Star rating must be in increments of 0.5 (e.g., 0.5, 1.0, 1.5 … 5.0)");
         }
@@ -455,7 +551,6 @@ public class ProductService {
             Path filePath = Paths.get(uploadDir).resolve(filename);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            // Log but don't rethrow – deletion failure shouldn't break the flow
             System.err.println("Warning: Could not delete file: " + filename + " — " + e.getMessage());
         }
     }
@@ -472,14 +567,24 @@ public class ProductService {
                 .build();
     }
 
+    private fishtail.ecom.entity.ProductCustomField buildCustomField(fishtail.ecom.dto.ProductCustomFieldDTO dto,
+            Product product) {
+        return fishtail.ecom.entity.ProductCustomField.builder()
+                .fieldName(dto.getFieldName())
+                .fieldValue(dto.getFieldValue())
+                .displayOrder(dto.getDisplayOrder())
+                .product(product)
+                .build();
+    }
+
     private ProductOfferDTO toOfferDTO(ProductOffer offer, String currency) {
         String cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         String offerImageUrl = (offer.getFeatureImage() != null && !offer.getFeatureImage().isBlank())
                 ? cleanBaseUrl + "/api/images/" + offer.getFeatureImage()
                 : null;
 
-        java.math.BigDecimal originalConverted = currencyService.convertFromUsd(offer.getOriginalPrice(), currency);
-        java.math.BigDecimal discountedConverted = currencyService.convertFromUsd(offer.getDiscountedPrice(), currency);
+        BigDecimal originalConverted = currencyService.convertFromUsd(offer.getOriginalPrice(), currency);
+        BigDecimal discountedConverted = currencyService.convertFromUsd(offer.getDiscountedPrice(), currency);
 
         return ProductOfferDTO.builder()
                 .id(offer.getId())
@@ -493,7 +598,6 @@ public class ProductService {
     }
 
     private ProductResponseDTO toResponseDTO(Product product, boolean includeSimilar, String requestCurrency) {
-        // Resolve target currency string, default to USD
         String currency = (requestCurrency == null || requestCurrency.isBlank()) ? "USD"
                 : requestCurrency.toUpperCase();
 
@@ -548,9 +652,37 @@ public class ProductService {
                     .build();
         }
 
+        List<fishtail.ecom.dto.ProductCustomFieldDTO> customFieldDTOs = product.getCustomFields() == null
+                ? Collections.emptyList()
+                : product.getCustomFields().stream()
+                        .sorted(Comparator
+                                .comparingInt(cf -> (cf.getDisplayOrder() == null ? 99 : cf.getDisplayOrder())))
+                        .map(cf -> fishtail.ecom.dto.ProductCustomFieldDTO.builder()
+                                .id(cf.getId())
+                                .fieldName(cf.getFieldName())
+                                .fieldValue(cf.getFieldValue())
+                                .displayOrder(cf.getDisplayOrder())
+                                .build())
+                        .collect(Collectors.toList());
+
+        List<fishtail.ecom.dto.ProductReviewDTO> reviewDTOs = product.getReviews() == null ? Collections.emptyList()
+                : product.getReviews().stream()
+                        .map(r -> fishtail.ecom.dto.ProductReviewDTO.builder()
+                                .id(r.getId())
+                                .reviewerName(r.getReviewerName())
+                                .reviewText(r.getReviewText())
+                                .starRating(r.getStarRating())
+                                .imageUrl(r.getImageUrl() != null && !r.getImageUrl().isBlank()
+                                        ? cleanBaseUrl + "/api/images/" + r.getImageUrl()
+                                        : null)
+                                .createdAt(r.getCreatedAt())
+                                .build())
+                        .collect(Collectors.toList());
+
         return ProductResponseDTO.builder()
                 .id(product.getId())
                 .title(product.getTitle())
+                .ribbon(product.getRibbon())
                 .numberOfReviews(product.getNumberOfReviews())
                 .starRating(product.getStarRating())
                 .originalPrice(currencyService.convertFromUsd(product.getOriginalPrice(), currency))
@@ -563,6 +695,7 @@ public class ProductService {
                 .category(categoryDTO)
                 .description(product.getDescription())
                 .highlights(product.getHighlights())
+                .details(product.getDetails())
                 .directions(product.getDirections())
                 .benefits(product.getBenefits())
                 .guarantee(product.getGuarantee())
@@ -570,7 +703,9 @@ public class ProductService {
                 .sectionOrder(product.getSectionOrder() != null ? new ArrayList<>(product.getSectionOrder())
                         : new ArrayList<>())
                 .offers(offerDTOs)
+                .customFields(customFieldDTOs)
                 .clickStats(stats)
+                .reviews(reviewDTOs)
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .build();

@@ -18,6 +18,8 @@ public class ProductRequestDTO {
 
     private String title;
 
+    private String ribbon;
+
     private Integer numberOfReviews;
 
     /** Star rating, e.g. 0.5, 1.0, 1.5 … 5.0 */
@@ -37,10 +39,14 @@ public class ProductRequestDTO {
 
     private String description;
     private String highlights;
+    private String details;
     private String directions;
     private String benefits;
     private String guarantee;
     private String shippingInfo;
+
+    /** List of dynamic custom fields created by an admin */
+    private List<ProductCustomFieldDTO> customFields;
 
     /** Order of sections (Description, Highlights, etc.) */
     private List<String> sectionOrder;
