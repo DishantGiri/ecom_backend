@@ -24,6 +24,9 @@ public class Product {
     @Column(nullable = false)
     private String title;
 
+    @Column(nullable = false, unique = true)
+    private String slug;
+
     @Column(name = "ribbon")
     private String ribbon;
 

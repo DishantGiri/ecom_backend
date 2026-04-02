@@ -17,6 +17,7 @@ import java.util.List;
 public class ProductRequestDTO {
 
     private String title;
+    private String slug;
 
     private String ribbon;
 

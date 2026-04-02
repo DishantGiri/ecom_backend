@@ -12,6 +12,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         /** Case-insensitive search by category name */
         List<Product> findByCategoryNameIgnoreCase(String categoryName);
 
+        /** Find product by its unique SEO slug */
+        java.util.Optional<Product> findBySlug(String slug);
+
         /** Case-insensitive partial match on title */
         List<Product> findByTitleContainingIgnoreCase(String keyword);
 

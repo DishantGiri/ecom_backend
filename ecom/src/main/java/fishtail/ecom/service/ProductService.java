@@ -73,6 +73,7 @@ public class ProductService {
 
         Product product = Product.builder()
                 .title(dto.getTitle())
+                .slug(dto.getSlug())
                 .ribbon(dto.getRibbon())
                 .numberOfReviews(dto.getNumberOfReviews())
                 .starRating(dto.getStarRating())
@@ -162,8 +163,16 @@ public class ProductService {
             for (CSVRecord csvRecord : csvParser) {
                 // Title
                 String title = csvRecord.isMapped("title") ? csvRecord.get("title") : null;
+                if (title == null && csvRecord.isMapped("name"))
+                    title = csvRecord.get("name");
+
                 if (title == null || title.isBlank())
                     continue;
+
+                String slug = csvRecord.isMapped("slug") ? csvRecord.get("slug") : null;
+                if (slug == null || slug.isBlank()) {
+                    slug = title.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+                }
 
                 // Prices
                 BigDecimal originalPrice = BigDecimal.ZERO;
@@ -211,12 +220,24 @@ public class ProductService {
                 }
 
                 String featureImage = null;
-                if (allImages != null && !allImages.isEmpty()) {
+                List<String> galleryImagesForProduct = new ArrayList<>();
+
+                if (csvRecord.isMapped("image") && !csvRecord.get("image").isBlank()) {
+                    String imageStr = csvRecord.get("image").trim();
+                    String[] images = imageStr.split(",");
+                    if (images.length > 0) {
+                        featureImage = images[0].trim();
+                        for (int i = 1; i < images.length; i++) {
+                            galleryImagesForProduct.add(images[i].trim());
+                        }
+                    }
+                } else if (allImages != null && !allImages.isEmpty()) {
                     featureImage = allImages.get(random.nextInt(allImages.size()));
                 }
 
                 Product product = Product.builder()
                         .title(title)
+                        .slug(slug)
                         .originalPrice(originalPrice)
                         .discountedPrice(discountedPrice)
                         .numberOfReviews(numberOfReviews)
@@ -228,7 +249,7 @@ public class ProductService {
                         .highlights(csvRecord.isMapped("highlights") ? csvRecord.get("highlights") : "")
                         .details(csvRecord.isMapped("details") ? csvRecord.get("details") : "")
                         .sectionOrder(new ArrayList<>())
-                        .galleryImages(new ArrayList<>())
+                        .galleryImages(galleryImagesForProduct)
                         .promotionalImages(new ArrayList<>())
                         .offers(new ArrayList<>())
                         .customFields(new ArrayList<>())
@@ -258,7 +279,16 @@ public class ProductService {
 
     public ProductResponseDTO getProductById(Long id, String currency) {
         Product product = findOrThrow(id);
+        return getProductDetails(product, currency);
+    }
 
+    public ProductResponseDTO getProductBySlug(String slug, String currency) {
+        Product product = productRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Product not found with slug: " + slug));
+        return getProductDetails(product, currency);
+    }
+
+    private ProductResponseDTO getProductDetails(Product product, String currency) {
         BigDecimal minPrice = product.getDiscountedPrice() != null
                 ? product.getDiscountedPrice().multiply(BigDecimal.valueOf(0.5))
                 : BigDecimal.ZERO;
@@ -307,6 +337,7 @@ public class ProductService {
         Product product = findOrThrow(id);
 
         product.setTitle(dto.getTitle());
+        product.setSlug(dto.getSlug());
         product.setRibbon(dto.getRibbon());
         product.setNumberOfReviews(dto.getNumberOfReviews());
         product.setStarRating(dto.getStarRating());
@@ -682,6 +713,7 @@ public class ProductService {
         return ProductResponseDTO.builder()
                 .id(product.getId())
                 .title(product.getTitle())
+                .slug(product.getSlug())
                 .ribbon(product.getRibbon())
                 .numberOfReviews(product.getNumberOfReviews())
                 .starRating(product.getStarRating())

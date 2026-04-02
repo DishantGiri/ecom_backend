@@ -16,6 +16,7 @@ public class ProductResponseDTO {
     private Long id;
 
     private String title;
+    private String slug;
 
     private String ribbon;
 

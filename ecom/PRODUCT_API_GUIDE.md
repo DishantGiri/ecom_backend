@@ -34,6 +34,7 @@ Admin endpoints require a **JWT Token** in the header:
 ```json
 {
   "title": "Nerve Freedom Pro",
+  "slug": "nerve-freedom-pro",
   "ribbon": "#1 Best Seller",
   "numberOfReviews": 115,
   "starRating": 4.5,
@@ -98,8 +99,10 @@ Admin endpoints require a **JWT Token** in the header:
 * `description`
 * `highlights`
 * `details`
+* `image` (Comma-separated filenames. 1st = Feature Image, others = Gallery)
+* `slug` (Unique SEO-friendly URL string. If empty, auto-generated from title)
 
-> **Note**: Products created via bulk upload will automatically be assigned a random feature image from the existing products in the database.
+> **Manual Image Uploads**: To use specific images, first upload your `.png/.jpg` files to the server's `uploads/` folder. Then, in the `image` column of your CSV, put the exact filenames. The API will link them automatically. If no `image` is provided, it will fallback to a random feature image from existing products.
 
 ---
 
@@ -145,7 +148,8 @@ This feature allows the admin to attach highly customized user reviews directly 
 | :--- | :--- | :--- |
 | `GET` | `/api/products` | Get list of all products. |
 | `GET` | `/api/products/popular` | Get list of all products **sorted by most clicks**. |
-| `GET` | `/api/products/{id}` | **Single Product Details + Recommendations**. |
+| `GET` | `/api/products/{id}` | **Single Product Details** (Legacy ID-based). |
+| `GET` | `/api/products/slug/{slug}` | **Single Product Details (SEO Friendly)**. |
 | `GET` | `/api/products/search?keyword=...` | Search products by title (**Supports typos/fuzzy match**). |
 | `GET` | `/api/products/category?name=...` | Filter products by category. |
 | `GET` | `/api/images/{filename}` | Serve an image file. |
