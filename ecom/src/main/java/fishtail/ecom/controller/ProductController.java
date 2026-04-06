@@ -123,17 +123,7 @@ public class ProductController {
         return ResponseEntity.ok(productService.getPopularProducts(currency));
     }
 
-    @GetMapping("/api/products/{id}")
-    public ResponseEntity<ProductResponseDTO> getProductById(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "USD", required = false) String currency) {
-        return ResponseEntity.ok(productService.getProductById(id, currency));
-    }
-
-    /**
-     * GET /api/products/slug/{slug}
-     */
-    @GetMapping("/api/products/slug/{slug}")
+    @GetMapping("/api/products/{slug}")
     public ResponseEntity<ProductResponseDTO> getProductBySlug(
             @PathVariable String slug,
             @RequestParam(defaultValue = "USD", required = false) String currency) {
