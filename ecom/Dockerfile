@@ -21,6 +21,7 @@ RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 
 # Set environment variables (can be overridden at runtime)
 ENV SPRING_PROFILES_ACTIVE=prod
+ENV APP_BASE_URL=http://209.145.62.242:3083
 
 EXPOSE 8083
 
